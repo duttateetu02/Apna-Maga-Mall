@@ -47,11 +47,12 @@ def home():
 def checkout():
     cart = session.get('cart', [])
     if cart:
-        # INDIAN TIME FIX (+5:30)
+        # Time fix (Jo aapka ho chuka hai)
         ist_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
         formatted_time = ist_time.strftime("%I:%M %p") 
         
-        # SUMMARY FIX (Ab technical naam nahi, asali naam aayenge)
+        # SUMMARY FIX: Is line ko dhyan se copy-paste karein
+        # Yeh line har item ka naam aur quantity nikaal kar text banati hai
         items_summary = ", ".join([f"{i['name']}(x{i['qty']})" for i in cart])
         
         final_total = sum(i['price'] for i in cart)
@@ -60,13 +61,12 @@ def checkout():
 
         sales_history.append({
             'time': formatted_time,
-            'items': items_summary,
+            'items': items_summary,  # <--- Yahan ab 'items_summary' variable jayega
             'total': round(amount_paid, 2)
         })
         
         session.pop('cart', None)
-        # Order hone ke baad ek sunder message dikhayega
-        return f"<div style='text-align:center;padding:100px;font-family:sans-serif;'><h1>🛍️ Order Success!</h1><p>Items: {items_summary}</p><br><a href='/' style='padding:10px 20px; background:green; color:white; text-decoration:none; border-radius:5px;'>Wapas Jayein</a></div>"
+        return redirect('/')
     return redirect('/')
 
 # --- 3. ADMIN PAGE ---
