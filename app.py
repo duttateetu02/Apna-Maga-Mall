@@ -1,71 +1,41 @@
 from flask import Flask, render_template_string, request, session, redirect, url_for
-from datetime import datetime
+from datetime import datetime, timedelta # timedelta zaroori hai time shift ke liye
 
 app = Flask(__name__)
 app.secret_key = "mega_mall_ultra_key"
 
-# --- INVENTORY ---
-inventory = {
-    "Aashirvaad Atta (10kg)": 520, "Fortune Oil (5L)": 750, "Basmati Rice (5kg)": 480, 
-    "Toor Dal (1kg)": 145, "Smartphone (Entry Level)": 8999, "Bluetooth Earbuds": 1499,
-    "Cotton T-Shirt": 499, "Denim Jeans": 1299, "Electric Kettle": 999
-}
+# ... (Inventory wala hissa wahi rehne dein) ...
 
 sales_history = []
 
-# --- 1. MAIN PAGE ROUTE (Ye missing tha) ---
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    if 'cart' not in session:
-        session['cart'] = []
-    
-    message = ""
-    
-    if request.method == 'POST':
-        action = request.form.get('action')
-        
-        # Add to Cart Logic
-        if action == 'add':
-            item_name = request.form.get('item')
-            quantity = int(request.form.get('quantity', 1))
-            price = inventory.get(item_name)
-            
-            if price:
-                cart = session.get('cart', [])
-                cart.append({'name': item_name, 'qty': quantity, 'price': price * quantity})
-                session['cart'] = cart
-                message = f"{item_name} added!"
-
-        # Checkout Redirect
-        elif action == 'checkout':
-            return redirect(url_for('checkout'), code=307) # POST data ke saath checkout par bhej raha hai
-
-    grand_total = sum(i['price'] for i in session['cart'])
-    discount = (grand_total * 0.15) if grand_total >= 2000 else 0
-    
-    return render_template_string(HTML_TEMPLATE, inventory=dict(sorted(inventory.items())), cart=session['cart'], total=grand_total, disc=discount, msg=message)
-
-# --- 2. CHECKOUT ROUTE ---
 @app.route('/checkout', methods=['POST'])
 def checkout():
     cart = session.get('cart', [])
     if cart:
-        total = sum(i['price'] for i in cart)
-        disc = (total * 0.15) if total >= 2000 else 0
-        final = total - disc
+        # 1. TIME FIX: UTC se Indian Time (+5:30) mein badalna
+        ist_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
+        formatted_time = ist_time.strftime("%I:%M %p") # 12-hour format with AM/PM
         
-        # SUMMARY FIX (Jo pehle built-in method dikha raha tha)
+        # 2. SUMMARY FIX: Items ko text mein badalna
+        # Purani galti: cart.items (Jo dict method dikha raha tha)
+        # Sahi tarika: List comprehension se naam nikalna
         items_summary = ", ".join([f"{i['name']}(x{i['qty']})" for i in cart])
         
+        final_total = sum(i['price'] for i in cart)
+        discount = (final_total * 0.15) if final_total >= 2000 else 0
+        amount_paid = final_total - discount
+
         sales_history.append({
-            'time': datetime.now().strftime("%H:%M"),
+            'time': formatted_time,
             'items': items_summary,
-            'total': final
+            'total': round(amount_paid, 2)
         })
+        
         session.pop('cart', None)
-        return f"<div style='text-align:center;padding:100px;'><h1>🛍️ Order Success!</h1><p>Items: {items_summary}</p><a href='/'>Wapas Jayein</a></div>"
+        return redirect('/')
     return redirect('/')
 
+# ... (Baki Admin aur HTML_TEMPLATE wahi rehne dein) ...
 # --- 3. ADMIN ROUTE ---
 @app.route('/admin')
 def admin():
