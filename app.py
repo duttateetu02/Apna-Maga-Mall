@@ -47,28 +47,28 @@ def home():
 def checkout():
     cart = session.get('cart', [])
     if cart:
-        # Time fix (Jo aapka ho chuka hai)
+        # 1. TIME FIX (Jo aapka sahi chal raha hai)
         ist_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
         formatted_time = ist_time.strftime("%I:%M %p") 
         
-        # SUMMARY FIX: Is line ko dhyan se copy-paste karein
-        # Yeh line har item ka naam aur quantity nikaal kar text banati hai
-        items_summary = ", ".join([f"{i['name']}(x{i['qty']})" for i in cart])
+        # 2. SUMMARY FIX (Is line mein hi sari jad hai)
+        # Hum cart ke har item se uska 'name' aur 'qty' nikaal kar ek saaf text bana rahe hain
+        items_summary = ", ".join([f"{item['name']}(x{item['qty']})" for item in cart])
         
-        final_total = sum(i['price'] for i in cart)
-        discount = (final_total * 0.15) if final_total >= 2000 else 0
-        amount_paid = final_total - discount
+        total_val = sum(i['price'] for i in cart)
+        discount = (total_val * 0.15) if total_val >= 2000 else 0
+        final_amount = total_val - discount
 
+        # Data save karte waqt 'items_summary' ka use karein
         sales_history.append({
             'time': formatted_time,
-            'items': items_summary,  # <--- Yahan ab 'items_summary' variable jayega
-            'total': round(amount_paid, 2)
+            'items': items_summary,  # <--- Yahan ab method nahi, text jayega
+            'total': round(final_amount, 2)
         })
         
         session.pop('cart', None)
         return redirect('/')
     return redirect('/')
-
 # --- 3. ADMIN PAGE ---
 @app.route('/admin')
 def admin():
