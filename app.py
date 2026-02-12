@@ -41,31 +41,24 @@ inventory = {
 
 sales_history = []
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    if 'cart' not in session: session['cart'] = []
-    message = ""
-    
-    if request.method == 'POST':
-        action = request.form.get('action')
-        if action == 'add':
-            item = request.form.get('item')
-            qty = int(request.form.get('quantity', 1))
-            if item in inventory:
-                session['cart'].append({'name': item, 'qty': qty, 'price': inventory[item] * qty})
-                session.modified = True
-                message = f"✅ {item} Added!"
-        elif action == 'checkout':
-            if session['cart']:
-                total = sum(i['price'] for i in session['cart'])
-                # BADA MALL = BADA DISCOUNT: 2000 se upar 15% Off
-                disc = (total * 0.15) if total >= 2000 else 0
-                sales_history.append({'time': datetime.now().strftime("%H:%M"), 'items': f"{len(session['cart'])} Items", 'total': total - disc})
-                session.pop('cart', None)
-                return f"<div style='text-align:center;padding:100px;'><h1>🛍️ Thank you for Shopping!</h1><h3>Paid: Rs {total-disc}</h3><a href='/'>Shop Again</a></div>"
-        elif action == 'clear':
-            session.pop('cart', None)
-            return redirect('/')
+# --- Ye wala hissa badalna hai ---
+@app.route('/checkout', methods=['POST']) # Ya jahan bhi aap checkout logic likh rahe hain
+def checkout():
+    if session['cart']:
+        total = sum(i['price'] for i in session['cart'])
+        disc = (total * 0.15) if total >= 2000 else 0
+        final = total - disc
+        
+        # Galti yahan thi: Humein items ko ek saaf "Text" mein badalna hai
+        items_summary = ", ".join([f"{i['name']}(x{i['qty']})" for i in session['cart']])
+        
+        sales_history.append({
+            'time': datetime.now().strftime("%H:%M"),
+            'items': items_summary,  # Ab yahan saaf naam aayenge
+            'total': final
+        })
+        session.pop('cart', None)
+        return redirect('/')
 
     grand_total = sum(i['price'] for i in session['cart'])
     discount = (grand_total * 0.15) if grand_total >= 2000 else 0
